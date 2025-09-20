@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+
+	_ "modernc.org/sqlite" // Импорт с пустым идентификатором для регистрации драйвера
 )
 
 var db *sql.DB
@@ -26,7 +28,7 @@ func Init(dbFile string) error {
 	_, err := os.Stat(dbFile)
 	install := err != nil
 
-	// Открываем базу данных
+	// Открываем базу данных. Имя драйвера "sqlite" регистрируется импортом выше.
 	db, err = sql.Open("sqlite", dbFile)
 	if err != nil {
 		return fmt.Errorf("не удалось открыть базу данных: %w", err)
@@ -36,6 +38,8 @@ func Init(dbFile string) error {
 	if install {
 		_, err = db.Exec(schema)
 		if err != nil {
+			// Закрываем соединение в случае ошибки создания схемы
+			db.Close()
 			return fmt.Errorf("не удалось создать таблицу scheduler: %w", err)
 		}
 	}

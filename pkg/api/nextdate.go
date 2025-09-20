@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"net/http"
-	"spr14/pkg/api"
 	"strconv"
 	"strings"
 	"time"
@@ -23,7 +22,7 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 		return "", fmt.Errorf("правило повторения не указано")
 	}
 
-	startDate, err := time.Parse(api.DateFormat, dstart)
+	startDate, err := time.Parse(DateFormat, dstart)
 	if err != nil {
 		return "", fmt.Errorf("неверный формат даты начала: %w", err)
 	}
@@ -52,7 +51,7 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 				break
 			}
 		}
-		return date.Format(api.DateFormat), nil
+		return date.Format(DateFormat), nil
 
 	case "y":
 		if len(parts) != 1 {
@@ -65,7 +64,7 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 				break
 			}
 		}
-		return date.Format(api.DateFormat), nil
+		return date.Format(DateFormat), nil
 
 	default:
 		// Базовая реализация: возвращаем ошибку для неподдерживаемых правил
@@ -75,24 +74,27 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 
 // NextDateHandler обрабатывает GET-запросы к /api/nextdate.
 func NextDateHandler(w http.ResponseWriter, r *http.Request) {
+	// Устанавливаем правильный Content-Type
+	w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
+
 	nowParam := r.FormValue("now")
 	dateParam := r.FormValue("date")
 	repeatParam := r.FormValue("repeat")
 
 	if dateParam == "" {
-		http.Error(w, `{"error":"Не указана дата начала"}`, http.StatusBadRequest)
+		http.Error(w, "Не указана дата начала", http.StatusBadRequest)
 		return
 	}
 	if repeatParam == "" {
-		http.Error(w, `{"error":"Не указано правило повторения"}`, http.StatusBadRequest)
+		http.Error(w, "Не указано правило повторения", http.StatusBadRequest)
 		return
 	}
 
 	now := time.Now()
 	if nowParam != "" {
-		parsedNow, err := time.Parse(api.DateFormat, nowParam)
+		parsedNow, err := time.Parse(DateFormat, nowParam)
 		if err != nil {
-			http.Error(w, fmt.Sprintf(`{"error":"Неверный формат даты now: %v"}`, err), http.StatusBadRequest)
+			http.Error(w, fmt.Sprintf("Неверный формат даты now: %v", err), http.StatusBadRequest)
 			return
 		}
 		// Устанавливаем время now на начало дня переданной даты для корректного сравнения
@@ -101,10 +103,10 @@ func NextDateHandler(w http.ResponseWriter, r *http.Request) {
 
 	nextDate, err := NextDate(now, dateParam, repeatParam)
 	if err != nil {
-		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	fmt.Fprintf(w, `{"next_date":"%s"}`, nextDate)
+	// Возвращаем только саму дату, без обертки в JSON
+	fmt.Fprint(w, nextDate)
 }

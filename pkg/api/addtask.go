@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"spr14/pkg/api"
 	"spr14/pkg/db"
 	"time"
 )
@@ -18,14 +17,14 @@ func writeJSON(w http.ResponseWriter, data interface{}) {
 // checkDate проверяет и корректирует дату задачи.
 func checkDate(task *db.Task) error {
 	now := time.Now()
-	nowStr := now.Format(api.DateFormat)
+	nowStr := now.Format(DateFormat)
 
 	if task.Date == "" {
 		task.Date = nowStr
 		return nil
 	}
 
-	t, err := time.Parse(api.DateFormat, task.Date)
+	t, err := time.Parse(DateFormat, task.Date)
 	if err != nil {
 		return fmt.Errorf("некорректный формат даты: %w", err)
 	}
