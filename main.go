@@ -5,6 +5,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	_ "modernc.org/sqlite"
+
 	"spr14/pkg/api"
 	"spr14/pkg/db"
 )
@@ -26,7 +29,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Ошибка инициализации БД: %v", err)
 	}
-	fmt.Printf("База данных инициализирована: %s\n", dbFile)
+
+	// Закрытие БД при завершении работы сервера
+	defer db.Close()
 
 	// Шаг 3: Инициализация API обработчиков
 	api.Init()

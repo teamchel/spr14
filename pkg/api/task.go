@@ -12,24 +12,24 @@ import (
 func GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	if id == "" {
-		writeJSON(w, map[string]string{"error": "Не указан идентификатор"})
+		writeJSON(w, map[string]string{"error": "Не указан идентификатор"}, http.StatusBadRequest) // Исправлено
 		return
 	}
 
 	// Проверка, что ID является числом
 	_, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": "Некорректный идентификатор"})
+		writeJSON(w, map[string]string{"error": "Некорректный идентификатор"}, http.StatusBadRequest) // Исправлено
 		return
 	}
 
 	task, err := db.GetTask(id)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": err.Error()})
+		writeJSON(w, map[string]string{"error": err.Error()}, http.StatusNotFound) // Исправлено
 		return
 	}
-
-	writeJSON(w, task)
+	// Успешный ответ - код 200 OK
+	writeJSON(w, task, http.StatusOK) // Исправлено
 }
 
 // UpdateTaskHandler обрабатывает PUT-запросы к /api/task для обновления задачи.
@@ -42,35 +42,36 @@ func UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var task db.Task
 	err := json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": "Ошибка десериализации JSON: " + err.Error()})
+		writeJSON(w, map[string]string{"error": "Ошибка десериализации JSON: " + err.Error()}, http.StatusBadRequest) // Исправлено
 		return
 	}
 
 	// Проверка обязательных полей
 	if task.ID == "" {
-		writeJSON(w, map[string]string{"error": "Не указан идентификатор задачи"})
+		writeJSON(w, map[string]string{"error": "Не указан идентификатор задачи"}, http.StatusBadRequest) // Исправлено
 		return
 	}
 	if task.Title == "" {
-		writeJSON(w, map[string]string{"error": "Не указан заголовок задачи"})
+		writeJSON(w, map[string]string{"error": "Не указан заголовок задачи"}, http.StatusBadRequest) // Исправлено
 		return
 	}
 
 	// Проверка и коррекция даты (аналогично добавлению)
 	err = checkDate(&task)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": err.Error()})
+		writeJSON(w, map[string]string{"error": err.Error()}, http.StatusBadRequest) // Исправлено
 		return
 	}
 
 	// Обновление задачи в БД
 	err = db.UpdateTask(&task)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": err.Error()})
+
+		writeJSON(w, map[string]string{"error": err.Error()}, http.StatusNotFound) // Исправлено
 		return
 	}
 
-	// Возврат пустого JSON в случае успеха
+	// Возврат пустого JSON в случае успеха - код 200 OK или 204 No Content
 	fmt.Fprint(w, "{}")
 }
 
@@ -83,24 +84,24 @@ func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	id := r.FormValue("id")
 	if id == "" {
-		writeJSON(w, map[string]string{"error": "Не указан идентификатор"})
+		writeJSON(w, map[string]string{"error": "Не указан идентификатор"}, http.StatusBadRequest)
 		return
 	}
 
 	// Проверка, что ID является числом
 	_, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": "Некорректный идентификатор"})
+		writeJSON(w, map[string]string{"error": "Некорректный идентификатор"}, http.StatusBadRequest)
 		return
 	}
 
 	// Удаление задачи из БД
 	err = db.DeleteTask(id)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": err.Error()})
+		writeJSON(w, map[string]string{"error": err.Error()}, http.StatusNotFound)
 		return
 	}
 
-	// Возврат пустого JSON в случае успеха
+	// Возврат пустого JSON в случае успеха - код 200 OK
 	fmt.Fprint(w, "{}")
 }

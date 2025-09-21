@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-
-	_ "modernc.org/sqlite" // Импорт с пустым идентификатором для регистрации драйвера
 )
 
 var db *sql.DB
@@ -28,7 +26,7 @@ func Init(dbFile string) error {
 	_, err := os.Stat(dbFile)
 	install := err != nil
 
-	// Открываем базу данных. Имя драйвера "sqlite" регистрируется импортом выше.
+	// Открываем базу данных
 	db, err = sql.Open("sqlite", dbFile)
 	if err != nil {
 		return fmt.Errorf("не удалось открыть базу данных: %w", err)
@@ -51,4 +49,13 @@ func Init(dbFile string) error {
 // Используется другими функциями пакета db.
 func GetDB() *sql.DB {
 	return db
+}
+
+// Close закрывает соединение с базой данных.
+// Должна вызываться при завершении работы сервера.
+func Close() error {
+	if db == nil {
+		return nil // Нет соединения для закрытия
+	}
+	return db.Close()
 }

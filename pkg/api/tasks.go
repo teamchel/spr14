@@ -17,18 +17,18 @@ func TasksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Получение списка задач из БД (максимум 50)
+	// Получение списка задач из БД
 	tasks, err := db.Tasks(50)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": "Ошибка получения списка задач: " + err.Error()})
+		// Ошибка получения списка задач
+		writeJSON(w, map[string]string{"error": "Ошибка получения списка задач: " + err.Error()}, http.StatusInternalServerError) // Исправлено
 		return
 	}
 
-	// Если задач нет, tasks будет пустым слайсом, а не nil
-	// Это важно для правильной сериализации в JSON
+	// Если задач нет, tasks будет пустым слайсом
 	if tasks == nil {
 		tasks = []*db.Task{} // Создаем пустой слайс, если nil
 	}
-
-	writeJSON(w, TasksResp{Tasks: tasks})
+	// Успешный ответ
+	writeJSON(w, TasksResp{Tasks: tasks}, http.StatusOK) // Исправлено
 }

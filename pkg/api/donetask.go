@@ -17,21 +17,21 @@ func DoneTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	id := r.FormValue("id")
 	if id == "" {
-		writeJSON(w, map[string]string{"error": "Не указан идентификатор"})
+		writeJSON(w, map[string]string{"error": "Не указан идентификатор"}, http.StatusBadRequest)
 		return
 	}
 
 	// Проверка, что ID является числом
 	_, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": "Некорректный идентификатор"})
+		writeJSON(w, map[string]string{"error": "Некорректный идентификатор"}, http.StatusBadRequest)
 		return
 	}
 
 	// Получение задачи из БД
 	task, err := db.GetTask(id)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": err.Error()})
+		writeJSON(w, map[string]string{"error": err.Error()}, http.StatusNotFound)
 		return
 	}
 
@@ -39,7 +39,8 @@ func DoneTaskHandler(w http.ResponseWriter, r *http.Request) {
 	if task.Repeat == "" {
 		err = db.DeleteTask(id)
 		if err != nil {
-			writeJSON(w, map[string]string{"error": err.Error()})
+			// Ошибка при удалении
+			writeJSON(w, map[string]string{"error": err.Error()}, http.StatusInternalServerError)
 			return
 		}
 	} else {
@@ -47,14 +48,15 @@ func DoneTaskHandler(w http.ResponseWriter, r *http.Request) {
 		now := time.Now()
 		nextDate, err := NextDate(now, task.Date, task.Repeat)
 		if err != nil {
-			writeJSON(w, map[string]string{"error": "Ошибка вычисления следующей даты: " + err.Error()})
+			writeJSON(w, map[string]string{"error": "Ошибка вычисления следующей даты: " + err.Error()}, http.StatusBadRequest)
 			return
 		}
 
 		// Обновляем дату задачи
 		err = db.UpdateTaskDate(id, nextDate)
 		if err != nil {
-			writeJSON(w, map[string]string{"error": err.Error()})
+			// Ошибка при обновлении даты
+			writeJSON(w, map[string]string{"error": err.Error()}, http.StatusInternalServerError)
 			return
 		}
 	}

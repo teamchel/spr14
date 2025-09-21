@@ -9,8 +9,9 @@ import (
 )
 
 // writeJSON записывает данные в формате JSON в ResponseWriter.
-func writeJSON(w http.ResponseWriter, data interface{}) {
+func writeJSON(w http.ResponseWriter, data interface{}, status int) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
 }
 
@@ -57,30 +58,34 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var task db.Task
 	err := json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": "Ошибка десериализации JSON: " + err.Error()})
+		// Ошибка десериализации JSON (400 Bad Request)
+		writeJSON(w, map[string]string{"error": "Ошибка десериализации JSON: " + err.Error()}, http.StatusBadRequest)
 		return
 	}
 
 	// Проверка обязательных полей
 	if task.Title == "" {
-		writeJSON(w, map[string]string{"error": "Не указан заголовок задачи"})
+		// Отсутствует обязательное поле (400 Bad Request)
+		writeJSON(w, map[string]string{"error": "Не указан заголовок задачи"}, http.StatusBadRequest)
 		return
 	}
 
 	// Проверка и коррекция даты
 	err = checkDate(&task)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": err.Error()})
+		// Ошибка в дате или правиле повторения (400 Bad Request)
+		writeJSON(w, map[string]string{"error": err.Error()}, http.StatusBadRequest)
 		return
 	}
 
 	// Добавление задачи в БД
 	id, err := db.AddTask(&task)
 	if err != nil {
-		writeJSON(w, map[string]string{"error": "Ошибка добавления задачи в БД: " + err.Error()})
+		// Ошибка базы данных (500 Internal Server Error)
+		writeJSON(w, map[string]string{"error": "Ошибка добавления задачи в БД: " + err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
-	// Возврат ID созданной задачи
-	writeJSON(w, map[string]string{"id": fmt.Sprintf("%d", id)})
+	// Возврат ID созданной задачи (201 Created)
+	writeJSON(w, map[string]string{"id": fmt.Sprintf("%d", id)}, http.StatusCreated)
 }
